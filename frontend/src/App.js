@@ -18,6 +18,44 @@ export default function ExtensionPrototype() {
   ]);
   const [activeMacro, setActiveMacro] = useState(null);
 
+  // State Persistence Effect
+  useEffect(() => {
+    // Restore state on mount
+    const savedState = localStorage.getItem('macroMateState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      // Only restore if we were recording or in editor
+      if (parsed.view === 'recorder' && parsed.isRecording) {
+        setView('recorder');
+        // Calculate elapsed time
+        const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
+        // We can't easily restore the exact timer state in this simple prototype without complex logic,
+        // but we can at least show the view and resume from where we think we are.
+        // For a better UX in prototype, let's just resume the view state.
+      } else if (parsed.view === 'editor') {
+        setView('editor');
+        if (parsed.activeMacro) setActiveMacro(parsed.activeMacro);
+      }
+    }
+  }, []);
+
+  // Save state changes
+  useEffect(() => {
+    const state = {
+      view,
+      activeMacro,
+      // We would ideally save isRecording and startTime here for the recorder
+    };
+    localStorage.setItem('macroMateState', JSON.stringify(state));
+  }, [view, activeMacro]);
+
+  const handleDeleteMacro = () => {
+    if (!activeMacro) return;
+    setMacros(prev => prev.filter(m => m.id !== activeMacro.id));
+    setActiveMacro(null);
+    setView('dashboard');
+  };
+
   // --- Views ---
 
   // 1. Dashboard View
