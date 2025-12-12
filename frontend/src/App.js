@@ -214,7 +214,10 @@ export default function ExtensionPrototype() {
                         size="icon" 
                         variant="ghost" 
                         className="h-8 w-8 text-muted-foreground hover:text-green-400 hover:bg-green-400/10 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => { e.stopPropagation(); /* Play Logic */ }}
+                        onClick={(e) => { 
+                            e.stopPropagation(); 
+                            startPlayback(macro);
+                        }}
                         >
                         <Play className="h-4 w-4 fill-current" />
                         </Button>
