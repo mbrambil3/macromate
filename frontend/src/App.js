@@ -1,20 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Square, Pause, Plus, Settings, Clock, MousePointer, Keyboard, MoreVertical, Trash2, Edit2, Save, Download, Search } from 'lucide-react';
+import { Play, Square, Pause, Plus, Settings, Clock, MousePointer, Keyboard, MoreVertical, Trash2, Edit2, Save, Search } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-// Mock Data Types
-// type EventType = 'click' | 'keypress' | 'delay' | 'scroll';
 
 export default function ExtensionPrototype() {
   const [view, setView] = useState('dashboard'); // dashboard, recorder, editor
@@ -123,10 +116,9 @@ export default function ExtensionPrototype() {
       if (isRecording) {
         interval = setInterval(() => {
           setTimer(t => t + 1);
-          // Simulate incoming events
           if (Math.random() > 0.6) {
             const newEvent = generateMockEvent();
-            setEvents(prev => [...prev, newEvent].slice(-8)); // Keep last 8 for preview
+            setEvents(prev => [...prev, newEvent].slice(-8)); 
           }
         }, 100);
       }
@@ -155,7 +147,6 @@ export default function ExtensionPrototype() {
     return (
       <div className="flex flex-col h-full bg-background animate-in zoom-in-95 duration-200">
         <div className="flex-1 flex flex-col items-center justify-center p-8 relative overflow-hidden">
-          {/* Background Pulse Animation */}
           {isRecording && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="h-64 w-64 rounded-full bg-primary/5 animate-ping duration-[3s]" />
@@ -173,7 +164,6 @@ export default function ExtensionPrototype() {
               </p>
             </div>
 
-            {/* Live Event Stream */}
             <div className="h-48 w-full max-w-xs mx-auto mt-8 relative">
                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent z-10" />
                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent z-10" />
@@ -200,7 +190,6 @@ export default function ExtensionPrototype() {
           </div>
         </div>
 
-        {/* Controls */}
         <div className="p-6 bg-card border-t border-white/5 pb-8">
           <div className="flex items-center justify-center gap-6">
             {!isRecording ? (
@@ -211,7 +200,7 @@ export default function ExtensionPrototype() {
                   className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_30px_-5px_hsl(var(--primary))] hover:shadow-[0_0_50px_-10px_hsl(var(--primary))] transition-all hover:scale-105"
                   onClick={() => setIsRecording(true)}
                 >
-                  <div className="h-4 w-4 rounded bg-white" /> {/* Usually a circle but record icon is circle */}
+                  <div className="h-4 w-4 rounded bg-white" />
                   <div className="absolute inset-0 rounded-full border-2 border-white/20" />
                 </Button>
               </>
@@ -221,7 +210,7 @@ export default function ExtensionPrototype() {
                   variant="outline" 
                   size="icon" 
                   className="h-12 w-12 rounded-full border-white/10 hover:bg-white/5"
-                  onClick={() => setIsRecording(false)} // Pause logic mock
+                  onClick={() => setIsRecording(false)}
                 >
                   <Pause className="h-5 w-5 fill-current" />
                 </Button>
@@ -271,7 +260,6 @@ export default function ExtensionPrototype() {
             
             <ScrollArea className="flex-1">
                 <div className="divide-y divide-white/5">
-                    {/* Mock Editor Lines */}
                     {[...Array(10)].map((_, i) => (
                         <div key={i} className="flex items-center gap-3 p-3 hover:bg-white/5 group transition-colors cursor-pointer text-sm">
                             <span className="font-mono text-muted-foreground text-xs w-6 text-right opacity-50">{i+1}</span>
@@ -300,7 +288,6 @@ export default function ExtensionPrototype() {
             </ScrollArea>
         </div>
 
-        {/* Editor Footer / Settings */}
         <div className="p-4 border-t border-white/5 bg-card/50 backdrop-blur space-y-4">
              <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -324,39 +311,13 @@ export default function ExtensionPrototype() {
     );
   };
 
+  // Render the views directly without the container wrapper
+  // This is because the Chrome Extension popup IS the container
   return (
-    <div className="min-h-screen bg-black/90 flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
-      {/* Extension Container Mockup */}
-      <div className="w-[400px] h-[600px] bg-background rounded-xl overflow-hidden shadow-2xl shadow-black border border-white/10 relative flex flex-col font-sans">
-        {/* Fake Browser Toolbar for immersion */}
-        <div className="bg-secondary/50 h-8 flex items-center px-3 gap-2 border-b border-white/5">
-             <div className="flex gap-1.5">
-                 <div className="h-3 w-3 rounded-full bg-red-500/20" />
-                 <div className="h-3 w-3 rounded-full bg-yellow-500/20" />
-                 <div className="h-3 w-3 rounded-full bg-green-500/20" />
-             </div>
-             <div className="flex-1 text-center text-[10px] text-muted-foreground font-medium opacity-50">
-                 Extension: MacroMate
-             </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 relative overflow-hidden">
-            {view === 'dashboard' && <Dashboard />}
-            {view === 'recorder' && <Recorder />}
-            {view === 'editor' && <Editor />}
-        </div>
-      </div>
-
-      {/* Helper Context for the Prototype */}
-      <div className="fixed bottom-4 right-4 max-w-sm bg-card p-4 rounded-lg border border-white/10 shadow-xl">
-        <h4 className="text-sm font-semibold mb-2 text-primary">Prototype Notes</h4>
-        <p className="text-xs text-muted-foreground">
-            This is a functional frontend prototype for the Chrome Extension popup. 
-            Real system recording is not possible in a browser sandbox, but the UI 
-            demonstrates the intended UX flow for recording, editing, and managing macros.
-        </p>
-      </div>
+    <div className="h-full w-full bg-background text-foreground font-sans">
+        {view === 'dashboard' && <Dashboard />}
+        {view === 'recorder' && <Recorder />}
+        {view === 'editor' && <Editor />}
     </div>
   );
 }

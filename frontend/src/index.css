@@ -4,26 +4,26 @@
  
 @layer base {
   :root {
-    /* Base HSL Values - Dark Mode First approach for this specific app style */
-    --background: 224 71% 4%;    /* Deepest Navy/Black */
-    --foreground: 213 31% 91%;   /* Off-white */
+    /* Base HSL Values */
+    --background: 224 71% 4%;    
+    --foreground: 213 31% 91%;   
  
-    --card: 224 71% 6%;          /* Slightly lighter than bg */
+    --card: 224 71% 6%;          
     --card-foreground: 213 31% 91%;
  
     --popover: 224 71% 4%;
     --popover-foreground: 213 31% 91%;
  
-    --primary: 263 70% 58%;      /* Vibrant Violet */
+    --primary: 263 70% 58%;      
     --primary-foreground: 210 40% 98%;
  
-    --secondary: 223 47% 11%;    /* Slate for secondary buttons */
+    --secondary: 223 47% 11%;    
     --secondary-foreground: 210 40% 98%;
  
     --muted: 223 47% 11%;
     --muted-foreground: 215 20% 65%;
  
-    --accent: 180 100% 50%;      /* Cyber Cyan for highlights */
+    --accent: 180 100% 50%;      
     --accent-foreground: 222 47% 11%;
  
     --destructive: 0 63% 31%;
@@ -34,16 +34,11 @@
     --ring: 263 70% 58%;
  
     --radius: 0.75rem;
-    
-    /* Custom Tokens */
-    --sidebar-width: 16rem;
-    --header-height: 4rem;
   }
  
   .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
-    /* ... repeat values or just use root as default dark for this specific theme */
   }
 }
  
@@ -51,18 +46,26 @@
   * {
     @apply border-border;
   }
+  
+  html, body {
+    /* CRITICAL: Chrome Extension Popup Dimensions */
+    width: 400px;
+    height: 600px;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    /* Premium dark mode feel */
     background-image: 
         radial-gradient(circle at 50% 0%, hsl(263 70% 58% / 0.15), transparent 40%),
         radial-gradient(circle at 80% 80%, hsl(180 100% 50% / 0.05), transparent 30%);
-    min-height: 100vh;
   }
 }
 
-/* Custom Scrollbar for the "Cyber" feel */
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -78,7 +81,6 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Animation Utilities */
 .animate-pulse-glow {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
