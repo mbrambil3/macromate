@@ -149,6 +149,39 @@ export default function ExtensionPrototype() {
     const [events, setEvents] = useState([]);
     const [timer, setTimer] = useState(0);
 
+    // Load recording state
+    useEffect(() => {
+        const savedRec = localStorage.getItem('recordingState');
+        if (savedRec) {
+            const parsed = JSON.parse(savedRec);
+            if (parsed.isRecording) {
+                setIsRecording(true);
+                setEvents(parsed.events || []);
+                const elapsed = Math.floor((Date.now() - parsed.startTime) / 100); // 100ms ticks
+                setTimer(elapsed > 0 ? elapsed : 0);
+            }
+        }
+    }, []);
+
+    // Save recording state
+    useEffect(() => {
+        if (isRecording) {
+            const startTime = Date.now() - (timer * 100);
+            localStorage.setItem('recordingState', JSON.stringify({
+                isRecording,
+                events,
+                startTime
+            }));
+             // Also update main app state to know we are here
+             localStorage.setItem('macroMateState', JSON.stringify({ view: 'recorder' }));
+        } else {
+             // If we stopped, clear specific recording state but keep view until user leaves
+             if (timer > 0) { // Only clear if we actually recorded something and stopped
+                 localStorage.removeItem('recordingState');
+             }
+        }
+    }, [isRecording, events, timer]);
+
     useEffect(() => {
       let interval;
       if (isRecording) {
@@ -156,7 +189,10 @@ export default function ExtensionPrototype() {
           setTimer(t => t + 1);
           if (Math.random() > 0.6) {
             const newEvent = generateMockEvent();
-            setEvents(prev => [...prev, newEvent].slice(-8)); 
+            setEvents(prev => {
+                const newEvents = [...prev, newEvent].slice(-8);
+                return newEvents;
+            }); 
           }
         }, 100);
       }
@@ -180,6 +216,24 @@ export default function ExtensionPrototype() {
     const formatTime = (ms) => {
       const s = Math.floor(ms / 10);
       return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+    };
+
+    const stopRecording = () => {
+        setIsRecording(false);
+        localStorage.removeItem('recordingState');
+        // Create a temporary macro from this recording
+        const newMacro = {
+            id: Date.now(),
+            name: `New Recording ${new Date().toLocaleTimeString()}`,
+            duration: formatTime(timer),
+            events: events.length || 15, // mock count if empty
+            lastRun: 'Just now',
+            loop: false
+        };
+        setActiveMacro(newMacro);
+        // We need to update the main macros list in the parent, but for now let's just push to editor
+        // Ideally we pass a callback setMacros
+        setView('editor');
     };
 
     return (
@@ -235,11 +289,13 @@ export default function ExtensionPrototype() {
                  <Button variant="ghost" onClick={() => setView('dashboard')}>Cancel</Button>
                  <Button 
                   size="lg" 
-                  className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_30px_-5px_hsl(var(--primary))] hover:shadow-[0_0_50px_-10px_hsl(var(--primary))] transition-all hover:scale-105"
+                  className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_30px_-5px_hsl(var(--primary))] hover:shadow-[0_0_50px_-10px_hsl(var(--primary))] transition-all hover:scale-105 flex items-center justify-center gap-2 group"
                   onClick={() => setIsRecording(true)}
                 >
-                  <div className="h-4 w-4 rounded bg-white" />
-                  <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="h-4 w-4 rounded-full bg-red-500 animate-pulse group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold mt-0.5 text-white/80">REC</span>
+                  </div>
                 </Button>
               </>
             ) : (
@@ -254,13 +310,10 @@ export default function ExtensionPrototype() {
                 </Button>
                 <Button 
                   size="lg" 
-                  className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-[0_0_30px_-5px_hsl(var(--destructive))] transition-all hover:scale-105"
-                  onClick={() => {
-                    setIsRecording(false);
-                    setView('editor');
-                  }}
+                  className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-[0_0_30px_-5px_hsl(var(--destructive))] transition-all hover:scale-105 flex items-center justify-center"
+                  onClick={stopRecording}
                 >
-                  <Square className="h-5 w-5 fill-current" />
+                  <Square className="h-6 w-6 fill-current" />
                 </Button>
               </>
             )}
