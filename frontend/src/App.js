@@ -71,7 +71,91 @@ export default function ExtensionPrototype() {
     setView('dashboard');
   };
 
+  // Handle Playback Simulation
+  useEffect(() => {
+    let interval;
+    if (isPlaying && activeMacro) {
+      interval = setInterval(() => {
+        setPlaybackProgress(prev => {
+          const nextStep = prev.currentStep + 1;
+          const totalSteps = activeMacro.events || 10;
+          
+          if (nextStep > totalSteps) {
+            // End of loop
+            if (activeMacro.isInfinite || prev.currentLoop < activeMacro.loopCount) {
+              return { ...prev, currentLoop: prev.currentLoop + 1, currentStep: 0 };
+            } else {
+              setIsPlaying(false);
+              return prev;
+            }
+          }
+          return { ...prev, currentStep: nextStep };
+        });
+      }, 200); // Fast playback simulation
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, activeMacro]);
+
+  const startPlayback = (macro) => {
+    if (!macro) return;
+    setActiveMacro(macro);
+    setPlaybackProgress({
+        currentLoop: 1,
+        totalLoops: macro.isInfinite ? '∞' : (macro.loopCount || 1),
+        currentStep: 0,
+        totalSteps: macro.events || 10
+    });
+    setIsPlaying(true);
+  };
+
+  const stopPlayback = () => {
+    setIsPlaying(false);
+  };
+
   // --- Views ---
+
+  // 0. Playback Overlay
+  const PlaybackOverlay = () => {
+    if (!isPlaying || !activeMacro) return null;
+    
+    const progress = (playbackProgress.currentStep / playbackProgress.totalSteps) * 100;
+    
+    return (
+        <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+            <div className="w-full max-w-xs space-y-8 text-center">
+                <div className="space-y-2">
+                    <div className="h-16 w-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center animate-pulse-glow">
+                        <Play className="h-8 w-8 text-primary fill-current" />
+                    </div>
+                    <h2 className="text-xl font-bold tracking-tight">Running Macro...</h2>
+                    <p className="text-muted-foreground">{activeMacro.name}</p>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                        <span>Loop: {playbackProgress.currentLoop} / {playbackProgress.totalLoops}</span>
+                        <span>Step: {playbackProgress.currentStep} / {playbackProgress.totalSteps}</span>
+                    </div>
+                    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                        <div 
+                            className="h-full bg-primary transition-all duration-200 ease-linear"
+                            style={{ width: `${progress}%` }} 
+                        />
+                    </div>
+                </div>
+
+                <Button 
+                    size="lg" 
+                    variant="destructive" 
+                    className="w-full h-12 rounded-full shadow-lg shadow-destructive/20"
+                    onClick={stopPlayback}
+                >
+                    <Square className="h-4 w-4 fill-current mr-2" /> Stop Execution
+                </Button>
+            </div>
+        </div>
+    );
+  };
 
   // 1. Dashboard View
   const Dashboard = () => {
