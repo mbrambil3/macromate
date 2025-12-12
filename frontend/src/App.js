@@ -549,12 +549,38 @@ export default function ExtensionPrototype() {
                 <Slider defaultValue={[1]} max={5} step={0.5} className="w-full" />
              </div>
              
-             <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-2">
-                    <Switch id="loop-mode" />
-                    <Label htmlFor="loop-mode" className="text-xs">Infinite Loop</Label>
+             <div className="flex items-center justify-between pt-2 gap-4">
+                <div className="flex items-center gap-3 flex-1">
+                    <div className="flex flex-col gap-1.5 flex-1">
+                        <Label className="text-xs text-muted-foreground">Repetitions</Label>
+                        <Input 
+                            type="number" 
+                            min="1" 
+                            max="999"
+                            value={editConfig.loopCount}
+                            onChange={(e) => setEditConfig(prev => ({ ...prev, loopCount: parseInt(e.target.value) || 1 }))}
+                            disabled={editConfig.isInfinite}
+                            className="h-8 text-xs bg-secondary/50 border-white/10"
+                        />
+                    </div>
+                    
+                    <div className="flex flex-col gap-1.5 items-center pt-5">
+                        <div className="flex items-center gap-2">
+                             <Switch 
+                                id="loop-mode" 
+                                checked={editConfig.isInfinite}
+                                onCheckedChange={(c) => setEditConfig(prev => ({ ...prev, isInfinite: c }))}
+                             />
+                             <Label htmlFor="loop-mode" className="text-xs whitespace-nowrap">Infinite</Label>
+                        </div>
+                    </div>
                 </div>
-                <Button size="icon" className="h-10 w-10 rounded-full bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20">
+
+                <Button 
+                    size="icon" 
+                    className="h-10 w-10 shrink-0 rounded-full bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20"
+                    onClick={() => startPlayback(activeMacro)}
+                >
                     <Play className="h-4 w-4 fill-white text-white" />
                 </Button>
              </div>
