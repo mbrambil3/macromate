@@ -1,54 +1,362 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Play, Square, Pause, Plus, Settings, Clock, MousePointer, Keyboard, MoreVertical, Trash2, Edit2, Save, Download, Search } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Mock Data Types
+// type EventType = 'click' | 'keypress' | 'delay' | 'scroll';
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
+export default function ExtensionPrototype() {
+  const [view, setView] = useState('dashboard'); // dashboard, recorder, editor
+  const [macros, setMacros] = useState([
+    { id: 1, name: 'Daily Login Sequence', duration: '12s', events: 24, lastRun: '2h ago' },
+    { id: 2, name: 'Form Filler - Job App', duration: '45s', events: 108, lastRun: '1d ago' },
+    { id: 3, name: 'Instagram Liker', duration: '∞', events: 50, lastRun: '5m ago', loop: true },
+  ]);
+  const [activeMacro, setActiveMacro] = useState(null);
+
+  // --- Views ---
+
+  // 1. Dashboard View
+  const Dashboard = () => {
+    return (
+      <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <header className="flex items-center justify-between p-4 border-b border-white/5 bg-background/50 backdrop-blur-md sticky top-0 z-10">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/20">
+              <MousePointer className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight">MacroMate</h1>
+          </div>
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-white">
+            <Settings className="h-5 w-5" />
+          </Button>
+        </header>
+
+        <div className="p-4 space-y-4 flex-1 overflow-hidden flex flex-col">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search macros..." className="pl-9 bg-secondary/50 border-white/5 focus-visible:ring-primary/50" />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-muted-foreground">Your Library</h2>
+            <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+              {macros.length} Macros
+            </Badge>
+          </div>
+
+          <ScrollArea className="flex-1 -mx-4 px-4">
+            <div className="space-y-3 pb-20">
+              {macros.map((macro) => (
+                <Card 
+                  key={macro.id} 
+                  className="p-3 bg-card/50 hover:bg-card border-white/5 transition-all cursor-pointer group hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 group relative overflow-hidden"
+                  onClick={() => { setActiveMacro(macro); setView('editor'); }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{macro.name}</h3>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <Clock className="h-3 w-3" /> {macro.duration}
+                        <span>•</span>
+                        <span>{macro.events} events</span>
+                      </div>
+                    </div>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="h-8 w-8 text-muted-foreground hover:text-green-400 hover:bg-green-400/10 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); /* Play Logic */ }}
+                    >
+                      <Play className="h-4 w-4 fill-current" />
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-3">
+                    {macro.loop && (
+                      <Badge variant="secondary" className="h-5 text-[10px] px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                        Looping
+                      </Badge>
+                    )}
+                    <span className="text-[10px] text-muted-foreground ml-auto">Last run: {macro.lastRun}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <div className="absolute bottom-6 right-6">
+          <Button 
+            size="lg" 
+            className="h-14 w-14 rounded-full shadow-xl shadow-primary/30 hover:shadow-primary/50 bg-primary hover:bg-primary/90 transition-all hover:scale-105"
+            onClick={() => setView('recorder')}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
+    );
   };
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+  // 2. Recorder View
+  const Recorder = () => {
+    const [isRecording, setIsRecording] = useState(false);
+    const [events, setEvents] = useState([]);
+    const [timer, setTimer] = useState(0);
+
+    useEffect(() => {
+      let interval;
+      if (isRecording) {
+        interval = setInterval(() => {
+          setTimer(t => t + 1);
+          // Simulate incoming events
+          if (Math.random() > 0.6) {
+            const newEvent = generateMockEvent();
+            setEvents(prev => [...prev, newEvent].slice(-8)); // Keep last 8 for preview
+          }
+        }, 100);
+      }
+      return () => clearInterval(interval);
+    }, [isRecording]);
+
+    const generateMockEvent = () => {
+      const types = ['click', 'move', 'keypress', 'scroll'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      return {
+        id: Date.now(),
+        type,
+        detail: type === 'click' ? `x: ${Math.floor(Math.random()*1920)}, y: ${Math.floor(Math.random()*1080)}` 
+              : type === 'keypress' ? `Key: ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`
+              : type === 'move' ? `Path: [${Math.floor(Math.random()*100)}, ${Math.floor(Math.random()*100)}]`
+              : 'DeltaY: 120',
+        timestamp: new Date().toLocaleTimeString().split(' ')[0]
+      };
+    };
+
+    const formatTime = (ms) => {
+      const s = Math.floor(ms / 10);
+      return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+    };
+
+    return (
+      <div className="flex flex-col h-full bg-background animate-in zoom-in-95 duration-200">
+        <div className="flex-1 flex flex-col items-center justify-center p-8 relative overflow-hidden">
+          {/* Background Pulse Animation */}
+          {isRecording && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="h-64 w-64 rounded-full bg-primary/5 animate-ping duration-[3s]" />
+              <div className="h-48 w-48 rounded-full bg-primary/10 animate-ping delay-75 duration-[2s]" />
+            </div>
+          )}
+
+          <div className="z-10 text-center space-y-6">
+            <div className={`transition-all duration-500 ${isRecording ? 'scale-110' : 'scale-100'}`}>
+              <div className="text-6xl font-mono font-bold tracking-tighter tabular-nums text-foreground">
+                {formatTime(timer)}
+              </div>
+              <p className="text-muted-foreground text-sm uppercase tracking-widest mt-2 font-medium">
+                {isRecording ? 'Recording System Events...' : 'Ready to Record'}
+              </p>
+            </div>
+
+            {/* Live Event Stream */}
+            <div className="h-48 w-full max-w-xs mx-auto mt-8 relative">
+               <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent z-10" />
+               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent z-10" />
+               
+               <div className="space-y-2 opacity-80">
+                 {events.map((e) => (
+                   <div key={e.id} className="flex items-center gap-3 text-xs text-left p-2 rounded border border-white/5 bg-white/5 animate-in slide-in-from-bottom-2 fade-in">
+                      {e.type === 'click' && <MousePointer className="h-3 w-3 text-primary" />}
+                      {e.type === 'keypress' && <Keyboard className="h-3 w-3 text-accent" />}
+                      {e.type === 'move' && <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />}
+                      {e.type === 'scroll' && <MoreVertical className="h-3 w-3 text-muted-foreground" />}
+                      <span className="font-mono text-muted-foreground">{e.timestamp}</span>
+                      <span className="font-medium text-foreground">{e.type.toUpperCase()}</span>
+                      <span className="text-muted-foreground truncate flex-1">{e.detail}</span>
+                   </div>
+                 ))}
+                 {events.length === 0 && !isRecording && (
+                   <div className="text-center text-muted-foreground text-sm py-12">
+                     Press record to start capturing inputs
+                   </div>
+                 )}
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="p-6 bg-card border-t border-white/5 pb-8">
+          <div className="flex items-center justify-center gap-6">
+            {!isRecording ? (
+              <>
+                 <Button variant="ghost" onClick={() => setView('dashboard')}>Cancel</Button>
+                 <Button 
+                  size="lg" 
+                  className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_30px_-5px_hsl(var(--primary))] hover:shadow-[0_0_50px_-10px_hsl(var(--primary))] transition-all hover:scale-105"
+                  onClick={() => setIsRecording(true)}
+                >
+                  <div className="h-4 w-4 rounded bg-white" /> {/* Usually a circle but record icon is circle */}
+                  <div className="absolute inset-0 rounded-full border-2 border-white/20" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="h-12 w-12 rounded-full border-white/10 hover:bg-white/5"
+                  onClick={() => setIsRecording(false)} // Pause logic mock
+                >
+                  <Pause className="h-5 w-5 fill-current" />
+                </Button>
+                <Button 
+                  size="lg" 
+                  className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-[0_0_30px_-5px_hsl(var(--destructive))] transition-all hover:scale-105"
+                  onClick={() => {
+                    setIsRecording(false);
+                    setView('editor');
+                  }}
+                >
+                  <Square className="h-5 w-5 fill-current" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 3. Editor View
+  const Editor = () => {
+    return (
+      <div className="flex flex-col h-full bg-background animate-in slide-in-from-right-4 duration-300">
+        <header className="flex items-center justify-between p-4 border-b border-white/5 bg-card/30">
+          <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="-ml-2">
+             ← Back
+          </Button>
+          <div className="text-center">
+            <h2 className="text-sm font-semibold">{activeMacro?.name || 'New Macro Recording'}</h2>
+            <p className="text-[10px] text-muted-foreground">unsaved changes</p>
+          </div>
+          <Button size="sm" variant="default" className="bg-primary text-white h-8">
+            <Save className="h-3.5 w-3.5 mr-2" /> Save
+          </Button>
+        </header>
+
+        <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="p-2 bg-secondary/30 flex items-center justify-between text-xs px-4 border-b border-white/5">
+                <span className="text-muted-foreground">34 Events</span>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-6 w-6"><Edit2 className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                </div>
+            </div>
+            
+            <ScrollArea className="flex-1">
+                <div className="divide-y divide-white/5">
+                    {/* Mock Editor Lines */}
+                    {[...Array(10)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 hover:bg-white/5 group transition-colors cursor-pointer text-sm">
+                            <span className="font-mono text-muted-foreground text-xs w-6 text-right opacity-50">{i+1}</span>
+                            <div className="h-8 w-8 rounded bg-secondary flex items-center justify-center border border-white/5">
+                                {i % 3 === 0 ? <MousePointer className="h-4 w-4 text-blue-400" /> : 
+                                 i % 3 === 1 ? <Keyboard className="h-4 w-4 text-amber-400" /> : 
+                                 <Clock className="h-4 w-4 text-gray-400" />}
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium text-foreground">
+                                        {i % 3 === 0 ? 'Left Click' : i % 3 === 1 ? 'Type Text' : 'Delay'}
+                                    </span>
+                                    {i % 3 === 0 && <Badge variant="secondary" className="text-[10px] h-5">x: 450, y: 120</Badge>}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                                    {i % 3 === 0 ? 'Target: Button.Submit' : i % 3 === 1 ? '"Hello World"' : 'Wait 500ms'}
+                                </p>
+                            </div>
+                            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-6 w-6">
+                                <MoreVertical className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            </ScrollArea>
+        </div>
+
+        {/* Editor Footer / Settings */}
+        <div className="p-4 border-t border-white/5 bg-card/50 backdrop-blur space-y-4">
+             <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <Label className="text-xs">Playback Speed</Label>
+                    <span className="text-xs font-mono text-primary">1.0x</span>
+                </div>
+                <Slider defaultValue={[1]} max={5} step={0.5} className="w-full" />
+             </div>
+             
+             <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-2">
+                    <Switch id="loop-mode" />
+                    <Label htmlFor="loop-mode" className="text-xs">Infinite Loop</Label>
+                </div>
+                <Button size="icon" className="h-10 w-10 rounded-full bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/20">
+                    <Play className="h-4 w-4 fill-white text-white" />
+                </Button>
+             </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+    <div className="min-h-screen bg-black/90 flex items-center justify-center p-4 bg-[url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center">
+      {/* Extension Container Mockup */}
+      <div className="w-[400px] h-[600px] bg-background rounded-xl overflow-hidden shadow-2xl shadow-black border border-white/10 relative flex flex-col font-sans">
+        {/* Fake Browser Toolbar for immersion */}
+        <div className="bg-secondary/50 h-8 flex items-center px-3 gap-2 border-b border-white/5">
+             <div className="flex gap-1.5">
+                 <div className="h-3 w-3 rounded-full bg-red-500/20" />
+                 <div className="h-3 w-3 rounded-full bg-yellow-500/20" />
+                 <div className="h-3 w-3 rounded-full bg-green-500/20" />
+             </div>
+             <div className="flex-1 text-center text-[10px] text-muted-foreground font-medium opacity-50">
+                 Extension: MacroMate
+             </div>
+        </div>
 
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+        {/* Content Area */}
+        <div className="flex-1 relative overflow-hidden">
+            {view === 'dashboard' && <Dashboard />}
+            {view === 'recorder' && <Recorder />}
+            {view === 'editor' && <Editor />}
+        </div>
+      </div>
+
+      {/* Helper Context for the Prototype */}
+      <div className="fixed bottom-4 right-4 max-w-sm bg-card p-4 rounded-lg border border-white/10 shadow-xl">
+        <h4 className="text-sm font-semibold mb-2 text-primary">Prototype Notes</h4>
+        <p className="text-xs text-muted-foreground">
+            This is a functional frontend prototype for the Chrome Extension popup. 
+            Real system recording is not possible in a browser sandbox, but the UI 
+            demonstrates the intended UX flow for recording, editing, and managing macros.
+        </p>
+      </div>
     </div>
   );
 }
-
-export default App;
