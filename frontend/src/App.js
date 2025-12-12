@@ -545,8 +545,10 @@ export default function ExtensionPrototype() {
     );
   };
 
+  // Render the views
   return (
-    <div className="h-full w-full bg-background text-foreground font-sans">
+    <div className="h-full w-full bg-background text-foreground font-sans relative">
+        <PlaybackOverlay />
         {view === 'dashboard' && <Dashboard />}
         {view === 'recorder' && <Recorder />}
         {view === 'editor' && <Editor />}
