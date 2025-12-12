@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Square, Pause, Plus, Settings, Clock, MousePointer, Keyboard, MoreVertical, Trash2, Edit2, Save, Search } from 'lucide-react';
@@ -9,49 +9,60 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
+// Default Data moved outside component to be used as fallback
+const DEFAULT_MACROS = [
+  { id: 1, name: 'Daily Login Sequence', duration: '12s', events: 24, lastRun: '2h ago' },
+  { id: 2, name: 'Form Filler - Job App', duration: '45s', events: 108, lastRun: '1d ago' },
+  { id: 3, name: 'Instagram Liker', duration: '∞', events: 50, lastRun: '5m ago', loop: true },
+];
+
 export default function ExtensionPrototype() {
-  const [view, setView] = useState('dashboard'); // dashboard, recorder, editor
-  const [macros, setMacros] = useState([
-    { id: 1, name: 'Daily Login Sequence', duration: '12s', events: 24, lastRun: '2h ago' },
-    { id: 2, name: 'Form Filler - Job App', duration: '45s', events: 108, lastRun: '1d ago' },
-    { id: 3, name: 'Instagram Liker', duration: '∞', events: 50, lastRun: '5m ago', loop: true },
-  ]);
+  // --- State Initialization with Persistence ---
+  
+  // 1. Macros List: Try to load from storage, fallback to defaults
+  const [macros, setMacros] = useState(() => {
+    try {
+      const saved = localStorage.getItem('macroMate_macros');
+      return saved ? JSON.parse(saved) : DEFAULT_MACROS;
+    } catch (e) {
+      return DEFAULT_MACROS;
+    }
+  });
+
+  // 2. View State
+  const [view, setView] = useState(() => {
+     // Check if we were recording
+     try {
+         const recState = localStorage.getItem('macroMate_recording');
+         if (recState) {
+             const parsed = JSON.parse(recState);
+             if (parsed.isRecording) return 'recorder';
+         }
+         return localStorage.getItem('macroMate_view') || 'dashboard';
+     } catch(e) { return 'dashboard'; }
+  });
+
   const [activeMacro, setActiveMacro] = useState(null);
 
-  // State Persistence Effect
+  // --- Global Persistence Effects ---
+
+  // Save Macros whenever they change
   useEffect(() => {
-    // Restore state on mount
-    const savedState = localStorage.getItem('macroMateState');
-    if (savedState) {
-      const parsed = JSON.parse(savedState);
-      // Only restore if we were recording or in editor
-      if (parsed.view === 'recorder' && parsed.isRecording) {
-        setView('recorder');
-        // Calculate elapsed time
-        const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
-        // We can't easily restore the exact timer state in this simple prototype without complex logic,
-        // but we can at least show the view and resume from where we think we are.
-        // For a better UX in prototype, let's just resume the view state.
-      } else if (parsed.view === 'editor') {
-        setView('editor');
-        if (parsed.activeMacro) setActiveMacro(parsed.activeMacro);
-      }
+    localStorage.setItem('macroMate_macros', JSON.stringify(macros));
+  }, [macros]);
+
+  // Save View whenever it changes (except if it's recorder, handled separately)
+  useEffect(() => {
+    if (view !== 'recorder') {
+        localStorage.setItem('macroMate_view', view);
     }
-  }, []);
+  }, [view]);
 
-  // Save state changes
-  useEffect(() => {
-    const state = {
-      view,
-      activeMacro,
-      // We would ideally save isRecording and startTime here for the recorder
-    };
-    localStorage.setItem('macroMateState', JSON.stringify(state));
-  }, [view, activeMacro]);
-
+  // Handle Macro Deletion
   const handleDeleteMacro = () => {
     if (!activeMacro) return;
-    setMacros(prev => prev.filter(m => m.id !== activeMacro.id));
+    const newMacros = macros.filter(m => m.id !== activeMacro.id);
+    setMacros(newMacros);
     setActiveMacro(null);
     setView('dashboard');
   };
@@ -89,43 +100,49 @@ export default function ExtensionPrototype() {
 
           <ScrollArea className="flex-1 -mx-4 px-4">
             <div className="space-y-3 pb-20">
-              {macros.map((macro) => (
-                <Card 
-                  key={macro.id} 
-                  className="p-3 bg-card/50 hover:bg-card border-white/5 transition-all cursor-pointer group hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 group relative overflow-hidden"
-                  onClick={() => { setActiveMacro(macro); setView('editor'); }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{macro.name}</h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" /> {macro.duration}
-                        <span>•</span>
-                        <span>{macro.events} events</span>
-                      </div>
-                    </div>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8 text-muted-foreground hover:text-green-400 hover:bg-green-400/10 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => { e.stopPropagation(); /* Play Logic */ }}
+              {macros.length === 0 ? (
+                <div className="text-center text-muted-foreground text-sm py-10 opacity-50">
+                    No macros found. Create one!
+                </div>
+              ) : (
+                macros.map((macro) => (
+                    <Card 
+                    key={macro.id} 
+                    className="p-3 bg-card/50 hover:bg-card border-white/5 transition-all cursor-pointer group hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 group relative overflow-hidden"
+                    onClick={() => { setActiveMacro(macro); setView('editor'); }}
                     >
-                      <Play className="h-4 w-4 fill-current" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mt-3">
-                    {macro.loop && (
-                      <Badge variant="secondary" className="h-5 text-[10px] px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
-                        Looping
-                      </Badge>
-                    )}
-                    <span className="text-[10px] text-muted-foreground ml-auto">Last run: {macro.lastRun}</span>
-                  </div>
-                </Card>
-              ))}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                        <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">{macro.name}</h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <Clock className="h-3 w-3" /> {macro.duration}
+                            <span>•</span>
+                            <span>{macro.events} events</span>
+                        </div>
+                        </div>
+                        <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 text-muted-foreground hover:text-green-400 hover:bg-green-400/10 -mr-2 -mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); /* Play Logic */ }}
+                        >
+                        <Play className="h-4 w-4 fill-current" />
+                        </Button>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 mt-3">
+                        {macro.loop && (
+                        <Badge variant="secondary" className="h-5 text-[10px] px-1.5 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                            Looping
+                        </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground ml-auto">Last run: {macro.lastRun}</span>
+                    </div>
+                    </Card>
+                ))
+              )}
             </div>
           </ScrollArea>
         </div>
@@ -147,57 +164,68 @@ export default function ExtensionPrototype() {
   const Recorder = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [events, setEvents] = useState([]);
-    const [timer, setTimer] = useState(0);
+    const [timer, setTimer] = useState(0); // 100ms ticks
+    const startTimeRef = useRef(null);
 
-    // Load recording state
+    // Initialize Recorder State
     useEffect(() => {
-        const savedRec = localStorage.getItem('recordingState');
+        const savedRec = localStorage.getItem('macroMate_recording');
         if (savedRec) {
-            const parsed = JSON.parse(savedRec);
-            if (parsed.isRecording) {
-                setIsRecording(true);
-                setEvents(parsed.events || []);
-                const elapsed = Math.floor((Date.now() - parsed.startTime) / 100); // 100ms ticks
-                setTimer(elapsed > 0 ? elapsed : 0);
-            }
+            try {
+                const parsed = JSON.parse(savedRec);
+                if (parsed.isRecording) {
+                    setIsRecording(true);
+                    setEvents(parsed.events || []);
+                    startTimeRef.current = parsed.startTime;
+                    // Calculate elapsed time immediately
+                    const now = Date.now();
+                    const elapsedTicks = Math.floor((now - parsed.startTime) / 100);
+                    setTimer(elapsedTicks);
+                }
+            } catch(e) { console.error(e); }
         }
     }, []);
 
-    // Save recording state
+    // Timer Logic
     useEffect(() => {
+        let interval;
         if (isRecording) {
-            const startTime = Date.now() - (timer * 100);
-            localStorage.setItem('recordingState', JSON.stringify({
-                isRecording,
-                events,
-                startTime
-            }));
-             // Also update main app state to know we are here
-             localStorage.setItem('macroMateState', JSON.stringify({ view: 'recorder' }));
-        } else {
-             // If we stopped, clear specific recording state but keep view until user leaves
-             if (timer > 0) { // Only clear if we actually recorded something and stopped
-                 localStorage.removeItem('recordingState');
-             }
-        }
-    }, [isRecording, events, timer]);
+            // If we just started (no start time), set it
+            if (!startTimeRef.current) {
+                startTimeRef.current = Date.now();
+            }
 
-    useEffect(() => {
-      let interval;
-      if (isRecording) {
-        interval = setInterval(() => {
-          setTimer(t => t + 1);
-          if (Math.random() > 0.6) {
-            const newEvent = generateMockEvent();
-            setEvents(prev => {
-                const newEvents = [...prev, newEvent].slice(-8);
-                return newEvents;
-            }); 
-          }
-        }, 100);
-      }
-      return () => clearInterval(interval);
-    }, [isRecording]);
+            interval = setInterval(() => {
+                // Update timer based on real time diff to handle backgrounding
+                const now = Date.now();
+                const elapsedTicks = Math.floor((now - startTimeRef.current) / 100);
+                setTimer(elapsedTicks);
+
+                // Persist State continuously
+                localStorage.setItem('macroMate_recording', JSON.stringify({
+                    isRecording: true,
+                    startTime: startTimeRef.current,
+                    events: events // In a real app we might debounce this
+                }));
+
+                // Mock Event Generation
+                if (Math.random() > 0.8) {
+                    const newEvent = generateMockEvent();
+                    setEvents(prev => {
+                        const newAcc = [...prev, newEvent].slice(-8);
+                        // Update storage with new event
+                        localStorage.setItem('macroMate_recording', JSON.stringify({
+                            isRecording: true,
+                            startTime: startTimeRef.current,
+                            events: newAcc
+                        }));
+                        return newAcc;
+                    }); 
+                }
+            }, 100);
+        }
+        return () => clearInterval(interval);
+    }, [isRecording, events]);
 
     const generateMockEvent = () => {
       const types = ['click', 'move', 'keypress', 'scroll'];
@@ -213,26 +241,46 @@ export default function ExtensionPrototype() {
       };
     };
 
-    const formatTime = (ms) => {
-      const s = Math.floor(ms / 10);
-      return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+    const formatTime = (ticks) => {
+      const totalSeconds = Math.floor(ticks / 10);
+      const m = Math.floor(totalSeconds / 60);
+      const s = (totalSeconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
     };
 
-    const stopRecording = () => {
+    const handleStartRecording = () => {
+        setIsRecording(true);
+        setEvents([]);
+        setTimer(0);
+        startTimeRef.current = Date.now();
+        localStorage.setItem('macroMate_recording', JSON.stringify({
+            isRecording: true,
+            startTime: Date.now(),
+            events: []
+        }));
+    };
+
+    const handleStopRecording = () => {
         setIsRecording(false);
-        localStorage.removeItem('recordingState');
-        // Create a temporary macro from this recording
+        // Clear recording state
+        localStorage.removeItem('macroMate_recording');
+        
+        // Create new macro
         const newMacro = {
             id: Date.now(),
             name: `New Recording ${new Date().toLocaleTimeString()}`,
             duration: formatTime(timer),
-            events: events.length || 15, // mock count if empty
+            events: Math.max(events.length, 12), // Mock count if low
             lastRun: 'Just now',
             loop: false
         };
+        
+        // Update Global Macros
+        const updatedMacros = [newMacro, ...macros];
+        setMacros(updatedMacros);
+        // Persistence handled by global useEffect on 'macros'
+        
         setActiveMacro(newMacro);
-        // We need to update the main macros list in the parent, but for now let's just push to editor
-        // Ideally we pass a callback setMacros
         setView('editor');
     };
 
@@ -290,7 +338,7 @@ export default function ExtensionPrototype() {
                  <Button 
                   size="lg" 
                   className="h-16 w-16 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_30px_-5px_hsl(var(--primary))] hover:shadow-[0_0_50px_-10px_hsl(var(--primary))] transition-all hover:scale-105 flex items-center justify-center gap-2 group"
-                  onClick={() => setIsRecording(true)}
+                  onClick={handleStartRecording}
                 >
                   <div className="flex flex-col items-center justify-center">
                     <div className="h-4 w-4 rounded-full bg-red-500 animate-pulse group-hover:scale-110 transition-transform" />
@@ -311,7 +359,7 @@ export default function ExtensionPrototype() {
                 <Button 
                   size="lg" 
                   className="h-16 w-16 rounded-full bg-destructive hover:bg-destructive/90 shadow-[0_0_30px_-5px_hsl(var(--destructive))] transition-all hover:scale-105 flex items-center justify-center"
-                  onClick={stopRecording}
+                  onClick={handleStopRecording}
                 >
                   <Square className="h-6 w-6 fill-current" />
                 </Button>
@@ -409,8 +457,6 @@ export default function ExtensionPrototype() {
     );
   };
 
-  // Render the views directly without the container wrapper
-  // This is because the Chrome Extension popup IS the container
   return (
     <div className="h-full w-full bg-background text-foreground font-sans">
         {view === 'dashboard' && <Dashboard />}
