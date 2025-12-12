@@ -11,15 +11,15 @@ import { Switch } from "@/components/ui/switch";
 
 // Default Data moved outside component to be used as fallback
 const DEFAULT_MACROS = [
-  { id: 1, name: 'Daily Login Sequence', duration: '12s', events: 24, lastRun: '2h ago' },
-  { id: 2, name: 'Form Filler - Job App', duration: '45s', events: 108, lastRun: '1d ago' },
-  { id: 3, name: 'Instagram Liker', duration: '∞', events: 50, lastRun: '5m ago', loop: true },
+  { id: 1, name: 'Daily Login Sequence', duration: '12s', events: 24, lastRun: '2h ago', loopCount: 1, isInfinite: false },
+  { id: 2, name: 'Form Filler - Job App', duration: '45s', events: 108, lastRun: '1d ago', loopCount: 1, isInfinite: false },
+  { id: 3, name: 'Instagram Liker', duration: '∞', events: 50, lastRun: '5m ago', loopCount: 0, isInfinite: true },
 ];
 
 export default function ExtensionPrototype() {
   // --- State Initialization with Persistence ---
   
-  // 1. Macros List: Try to load from storage, fallback to defaults
+  // 1. Macros List
   const [macros, setMacros] = useState(() => {
     try {
       const saved = localStorage.getItem('macroMate_macros');
@@ -43,6 +43,10 @@ export default function ExtensionPrototype() {
   });
 
   const [activeMacro, setActiveMacro] = useState(null);
+  
+  // 3. Playback State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState({ currentLoop: 1, totalLoops: 1, currentStep: 0, totalSteps: 0 });
 
   // --- Global Persistence Effects ---
 
