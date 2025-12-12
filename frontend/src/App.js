@@ -464,6 +464,21 @@ export default function ExtensionPrototype() {
 
   // 3. Editor View
   const Editor = () => {
+    
+    // Local state for editing before save
+    const [editConfig, setEditConfig] = useState({
+        loopCount: activeMacro?.loopCount || 1,
+        isInfinite: activeMacro?.isInfinite || false
+    });
+
+    const handleSave = () => {
+        const updated = { ...activeMacro, ...editConfig };
+        const newMacros = macros.map(m => m.id === updated.id ? updated : m);
+        setMacros(newMacros);
+        setActiveMacro(updated);
+        // Show saved feedback ideally
+    };
+
     return (
       <div className="flex flex-col h-full bg-background animate-in slide-in-from-right-4 duration-300">
         <header className="flex items-center justify-between p-4 border-b border-white/5 bg-card/30">
@@ -474,7 +489,7 @@ export default function ExtensionPrototype() {
             <h2 className="text-sm font-semibold">{activeMacro?.name || 'New Macro Recording'}</h2>
             <p className="text-[10px] text-muted-foreground">unsaved changes</p>
           </div>
-          <Button size="sm" variant="default" className="bg-primary text-white h-8">
+          <Button size="sm" variant="default" className="bg-primary text-white h-8" onClick={handleSave}>
             <Save className="h-3.5 w-3.5 mr-2" /> Save
           </Button>
         </header>
