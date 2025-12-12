@@ -345,7 +345,14 @@ export default function ExtensionPrototype() {
                 <span className="text-muted-foreground">34 Events</span>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-6 w-6"><Edit2 className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-destructive hover:bg-destructive/10"
+                        onClick={handleDeleteMacro}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
                 </div>
             </div>
             
